@@ -1,0 +1,491 @@
+{
+    "code": 0,
+    "msg": "ok",
+    "data": {
+        "time_type": [
+            {
+                "id": "daily",
+                "name": "日榜",
+                "key": "daily"
+            },
+            {
+                "id": "weekly",
+                "name": "周榜",
+                "key": "weekly"
+            },
+            {
+                "id": "monthly",
+                "name": "月榜",
+                "key": "monthly"
+            }
+        ],
+        "time_range": {
+            "daily": [
+                {
+                    "id": "20240331",
+                    "name": "2024/03/31"
+                },
+                {
+                    "id": "20240330",
+                    "name": "2024/03/30"
+                },
+                {
+                    "id": "20240329",
+                    "name": "2024/03/29"
+                },
+                {
+                    "id": "20240328",
+                    "name": "2024/03/28"
+                },
+                {
+                    "id": "20240327",
+                    "name": "2024/03/27"
+                },
+                {
+                    "id": "20240326",
+                    "name": "2024/03/26"
+                },
+                {
+                    "id": "20240325",
+                    "name": "2024/03/25"
+                },
+                {
+                    "id": "20240324",
+                    "name": "2024/03/24"
+                },
+                {
+                    "id": "20240323",
+                    "name": "2024/03/23"
+                },
+                {
+                    "id": "20240322",
+                    "name": "2024/03/22"
+                },
+                {
+                    "id": "20240321",
+                    "name": "2024/03/21"
+                },
+                {
+                    "id": "20240320",
+                    "name": "2024/03/20"
+                },
+                {
+                    "id": "20240319",
+                    "name": "2024/03/19"
+                },
+                {
+                    "id": "20240318",
+                    "name": "2024/03/18"
+                }
+            ],
+            "weekly": [
+                {
+                    "id": "20240325-20240331",
+                    "name": "03/25-03/31"
+                },
+                {
+                    "id": "20240318-20240324",
+                    "name": "03/18-03/24"
+                },
+                {
+                    "id": "20240311-20240317",
+                    "name": "03/11-03/17"
+                },
+                {
+                    "id": "20240304-20240310",
+                    "name": "03/04-03/10"
+                }
+            ],
+            "monthly": [
+                {
+                    "id": "20240301-20240331",
+                    "name": "2024/03"
+                },
+                {
+                    "id": "20240201-20240229",
+                    "name": "2024/02"
+                },
+                {
+                    "id": "20240101-20240131",
+                    "name": "2024/01"
+                },
+                {
+                    "id": "20231201-20231231",
+                    "name": "2023/12"
+                },
+                {
+                    "id": "20231101-20231130",
+                    "name": "2023/11"
+                },
+                {
+                    "id": "20231001-20231031",
+                    "name": "2023/10"
+                }
+            ]
+        },
+        "product_categories": [
+            {
+                "id": "",
+                "name": "全部",
+                "name_slug": "all",
+                "key": "All"
+            },
+            {
+                "id": "601450",
+                "name": "护理和美容",
+                "name_slug": "beauty-personal-care",
+                "key": "magellan_601450"
+            },
+            {
+                "id": "601152",
+                "name": "女士服装",
+                "name_slug": "womenswear-underwear",
+                "key": "magellan_601152"
+            },
+            {
+                "id": "824328",
+                "name": "男士服装",
+                "name_slug": "menswear-underwear",
+                "key": "magellan_824328"
+            },
+            {
+                "id": "600001",
+                "name": "家居用品",
+                "name_slug": "home-supplies",
+                "key": "magellan_600001"
+            },
+            {
+                "id": "605248",
+                "name": "时尚配饰",
+                "name_slug": "fashion-accessories",
+                "key": "magellan_605248"
+            },
+            {
+                "id": "601739",
+                "name": "手机和电子产品",
+                "name_slug": "phones-electronics",
+                "key": "magellan_601739"
+            },
+            {
+                "id": "601303",
+                "name": "穆斯林时尚",
+                "name_slug": "muslim-fashion",
+                "key": "magellan_601303"
+            },
+            {
+                "id": "824584",
+                "name": "箱包",
+                "name_slug": "luggage-bags",
+                "key": "magellan_824584"
+            },
+            {
+                "id": "601352",
+                "name": "鞋子",
+                "name_slug": "shoes",
+                "key": "magellan_601352"
+            },
+            {
+                "id": "602284",
+                "name": "婴儿与孕妇",
+                "name_slug": "baby-maternity",
+                "key": "magellan_602284"
+            },
+            {
+                "id": "600024",
+                "name": "厨房用具",
+                "name_slug": "kitchenware",
+                "key": "magellan_600024"
+            },
+            {
+                "id": "603014",
+                "name": "运动和户外",
+                "name_slug": "sports-outdoor",
+                "key": "magellan_603014"
+            },
+            {
+                "id": "700437",
+                "name": "食品与饮料",
+                "name_slug": "food-beverages",
+                "key": "magellan_700437"
+            },
+            {
+                "id": "601755",
+                "name": "计算机与办公设备",
+                "name_slug": "computers-office-equipment",
+                "key": "magellan_601755"
+            },
+            {
+                "id": "604206",
+                "name": "玩具和爱好",
+                "name_slug": "toys-hobbies",
+                "key": "magellan_604206"
+            },
+            {
+                "id": "802184",
+                "name": "儿童时尚",
+                "name_slug": "kids-fashion",
+                "key": "magellan_802184"
+            },
+            {
+                "id": "605196",
+                "name": "汽车和摩托车",
+                "name_slug": "automotive-motorcycle",
+                "key": "magellan_605196"
+            },
+            {
+                "id": "602118",
+                "name": "宠物用品",
+                "name_slug": "pet-supplies",
+                "key": "magellan_602118"
+            },
+            {
+                "id": "600942",
+                "name": "家用电器",
+                "name_slug": "household-appliances",
+                "key": "magellan_600942"
+            },
+            {
+                "id": "600154",
+                "name": "纺织和软家居",
+                "name_slug": "textiles-soft-furnishings",
+                "key": "magellan_600154"
+            },
+            {
+                "id": "604968",
+                "name": "家装",
+                "name_slug": "home-improvement",
+                "key": "magellan_604968"
+            },
+            {
+                "id": "604579",
+                "name": "工具和硬件",
+                "name_slug": "tools-hardware",
+                "key": "magellan_604579"
+            },
+            {
+                "id": "801928",
+                "name": "书/杂志/影音",
+                "name_slug": "books-magazines-audio",
+                "key": "magellan_801928"
+            },
+            {
+                "id": "700645",
+                "name": "健康",
+                "name_slug": "health",
+                "key": "magellan_700645"
+            },
+            {
+                "id": "953224",
+                "name": "珠宝饰品",
+                "name_slug": "jewellery-accessories-derivatives",
+                "key": "magellan_953224"
+            },
+            {
+                "id": "604453",
+                "name": "家具",
+                "name_slug": "furniture",
+                "key": "magellan_604453"
+            },
+            {
+                "id": "951432",
+                "name": "收藏",
+                "name_slug": "collections",
+                "key": "magellan_951432"
+            },
+            {
+                "id": "834312",
+                "name": "虚拟商品",
+                "name_slug": "virtual-products",
+                "key": "magellan_834312"
+            },
+            {
+                "id": "0",
+                "name": "其他",
+                "name_slug": "other",
+                "key": "magellan_0"
+            }
+        ],
+        "influencer_categories": [
+            {
+                "id": "",
+                "name": "全部",
+                "name_slug": "all",
+                "key": "All"
+            },
+            {
+                "id": "Public Figure",
+                "name": "公众人物",
+                "name_slug": "public-figure",
+                "key": "Public Figure"
+            },
+            {
+                "id": "Entertainment",
+                "name": "娱乐",
+                "name_slug": "entertainment",
+                "key": "Entertainment"
+            },
+            {
+                "id": "Beauty",
+                "name": "颜值",
+                "name_slug": "beauty",
+                "key": "Beauty"
+            },
+            {
+                "id": "Personal Blog",
+                "name": "个人博客",
+                "name_slug": "personal-blog",
+                "key": "Personal Blog"
+            },
+            {
+                "id": "Art",
+                "name": "艺术",
+                "name_slug": "art",
+                "key": "Art"
+            },
+            {
+                "id": "Music/Dance",
+                "name": "音乐/舞蹈",
+                "name_slug": "musicdance",
+                "key": "Music/Dance"
+            },
+            {
+                "id": "Fashion",
+                "name": "时尚",
+                "name_slug": "fashion",
+                "key": "Fashion"
+            },
+            {
+                "id": "Media",
+                "name": "媒体",
+                "name_slug": "media",
+                "key": "Media"
+            },
+            {
+                "id": "Sports",
+                "name": "运动健身",
+                "name_slug": "sports",
+                "key": "Sports"
+            },
+            {
+                "id": "Pets",
+                "name": "宠物",
+                "name_slug": "pets",
+                "key": "Pets"
+            },
+            {
+                "id": "Education",
+                "name": "教育",
+                "name_slug": "education",
+                "key": "Education"
+            },
+            {
+                "id": "Baby",
+                "name": "母婴",
+                "name_slug": "baby",
+                "key": "Baby"
+            },
+            {
+                "id": "Food",
+                "name": "美食",
+                "name_slug": "food",
+                "key": "Food"
+            },
+            {
+                "id": "Clothing",
+                "name": "服装配饰",
+                "name_slug": "clothing",
+                "key": "Clothing"
+            },
+            {
+                "id": "Gaming",
+                "name": "游戏",
+                "name_slug": "gaming",
+                "key": "Gaming"
+            },
+            {
+                "id": "Home",
+                "name": "家居家具",
+                "name_slug": "home",
+                "key": "Home"
+            },
+            {
+                "id": "Shopping",
+                "name": "购物",
+                "name_slug": "shopping",
+                "key": "Shopping"
+            },
+            {
+                "id": "Outdoor",
+                "name": "户外",
+                "name_slug": "outdoor",
+                "key": "Outdoor"
+            },
+            {
+                "id": "Brand",
+                "name": "品牌",
+                "name_slug": "brand",
+                "key": "Brand"
+            },
+            {
+                "id": "Health",
+                "name": "健康",
+                "name_slug": "health",
+                "key": "Health"
+            },
+            {
+                "id": "Auto",
+                "name": "汽车",
+                "name_slug": "auto",
+                "key": "Auto"
+            },
+            {
+                "id": "Tech",
+                "name": "科技",
+                "name_slug": "tech",
+                "key": "Tech"
+            },
+            {
+                "id": "Electron",
+                "name": "电子/数码",
+                "name_slug": "electron",
+                "key": "Electron"
+            },
+            {
+                "id": "Movie",
+                "name": "电影",
+                "name_slug": "movie",
+                "key": "Movie"
+            },
+            {
+                "id": "Life",
+                "name": "生活方式",
+                "name_slug": "life",
+                "key": "Life"
+            },
+            {
+                "id": "Travel",
+                "name": "旅行",
+                "name_slug": "travel",
+                "key": "Travel"
+            },
+            {
+                "id": "Finance",
+                "name": "财经",
+                "name_slug": "finance",
+                "key": "Finance"
+            },
+            {
+                "id": "Government",
+                "name": "政务",
+                "name_slug": "government",
+                "key": "Government"
+            },
+            {
+                "id": "Service",
+                "name": "服务",
+                "name_slug": "service",
+                "key": "Service"
+            }
+        ]
+    }
+}
