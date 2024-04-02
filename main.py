@@ -1,26 +1,39 @@
 import requests
-from parse import parser, parseCats
+from utils.parse import parser, parseCats
+# from utils.database import write_rows
 from dataclasses import dataclass
-import requests
+import datetime
+from typing import List
+import asyncio
+import aiohttp
+from aiohttp import ClientTimeout
+import random
+import logging
+from utils.logger import setup_logging
+from utils.database import DatabaseManager
 
 filter_url = "https://echotik.live/api/v1/data/videos/leaderboard/filters"
-
-url = "https://echotik.live/api/v1/data/videos/leaderboard/sell-videos"
+page_url = "https://echotik.live/api/v1/data/videos/leaderboard/sell-videos"
+PROXY_TXT = 'proxy-list.txt'
+HOST = "localhost"
+USER = "root"
+PASSWORD = "123456"
+DATABASE = "echotik_crawler"
 
 
 @dataclass
-class PagePara:
-    time_type: str = "daily"
+class PageTaskPara:
     time_range: str
     page: str
-    per_page: str = "20"
     product_categories: str
+    per_page: str = "10"
+    time_type: str = "daily"
 
 
 headers = {
     "accept": "application/json, text/plain, */*",
     "accept-language": "zh-CN,zh;q=0.9,zh-TW;q=0.8,ja;q=0.7",
-    "authorization": "Bearer 107582|PSicPd9hhDfYOoayq054HONngirAFaQd6EDcms2O",
+    "authorization": "Bearer 108205|AfdsWVtJs2wWALqeimj4JNg3E3nGmMElPO7eG6Mq",
     "content-type": "application/json",
     "cookie": "currency=USD; lang=zh-CN; region=US;",
     "dnt": "1",
@@ -37,16 +50,27 @@ headers = {
     "x-region": "US",
 }
 
-# response = requests.get(url, headers=headers, params=params)
-# print(response.json())
+
+def getProxies() -> List[str]:
+    file_path = PROXY_TXT
+    with open(file_path, 'r', encoding='utf-8') as f:
+        proxies = f.readlines()
+    proxies = [p.rstrip('\n') for p in proxies]
+    return proxies
 
 
-def main():
-    response = requests.get(filter_url, headers=headers)
-    cats = parseCats(response.text)
-    print(cats)
-    para = PagePara(time_range="20240326", page="1",
-                    product_categories=cats[0])
+async def fetch(url, page_params, session, proxy):
+    try:
+        async with session.get(url, params=page_params, timeout=ClientTimeout(total=10), headers=headers) as response:
+            # async with session.get(url, params=page_params, proxy=proxy, timeout=ClientTimeout(total=10), headers=headers) as response:
+            logging.info(
+                f"request success: cat_id={page_params.product_categories}, page={page_params.page}, per_page={page_params.per_page}")
+            return await response.text()
+    except Exception as e:
+        logging.warning(f"request failed:{proxy} - {e}")
+
+
+async def page_task(para: PageTaskPara, proxies: List[str], session: aiohttp.ClientSession, dataBase: DatabaseManager):
     page_params = {
         "time_type": para.time_type,
         "time_range": para.time_range,
@@ -54,10 +78,45 @@ def main():
         "product_categories": para.product_categories,
         "per_page": para.per_page
     }
-    response = requests.get(url, headers=headers, params=page_params)
-    res = parser(response.text)
-    print(res[0])
 
+    proxy = random.choice(proxies)
+    url = page_url
+    resp = await fetch(url, page_params, session, f"http://{proxy}")
+    records = parser(resp)
+    print(records[0])
+    print(len(records))
+    for record in records:
+        dataBase.insert_or_update_row(record)
+
+
+async def main():
+    dataBase = DatabaseManager(HOST, USER, PASSWORD, DATABASE)
+
+    current_date = datetime.date.today()
+    ti_range = str(current_date - datetime.timedelta(days=1)).replace("-", "")
+
+    proxies = getProxies()
+
+    response = requests.get(filter_url, headers=headers)
+    cats = parseCats(response.text)
+    logging.info(f'{len(cats)} cats has been spawned')
+    pageTasks = []
+
+    session = aiohttp.ClientSession()
+
+    # for i in range(len(cats)):
+    for i in range(2):
+        para = PageTaskPara(time_range=ti_range, page="1",
+                            product_categories=cats[i])
+        task = asyncio.create_task(page_task(para, proxies, session, dataBase))
+        pageTasks.append(task)
+    try:
+        await asyncio.gather(*pageTasks, return_exceptions=True)
+    finally:
+        await session.close()
+
+    dataBase.close()
 
 if __name__ == '__main__':
-    main()
+    setup_logging()
+    asyncio.run(main())

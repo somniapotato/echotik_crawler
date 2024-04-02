@@ -1,0 +1,13 @@
+CREATE TABLE videos (
+    video_id INT PRIMARY KEY,
+    title VARCHAR(255),
+    video_url VARCHAR(255),
+    sales INT,
+    views INT,
+    er_ratio FLOAT,
+    comments INT,
+    shares INT,
+    product_info TEXT,
+    ctime INT,
+    mtime INT
+);

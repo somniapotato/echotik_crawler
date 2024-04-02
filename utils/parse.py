@@ -47,7 +47,7 @@ class ProductInfo:
 
 @dataclass
 class VideoData:
-    video_id: Optional[int] = None
+    video_id: int
     title: Optional[str] = None
     hashtag: Optional[str] = None  # jsonStr
     video_url: Optional[str] = None
@@ -80,6 +80,8 @@ def str2int(s: str):
 
 def oneRecordParser(data: dict) -> VideoData:
     videoData = VideoData()
+
+    videoData.video_id = data[parserDic["video_id"]]
     raw_title = data[parserDic["raw_title"]]
     videoData.title = raw_title.split("#")[0]
     videoData.hashtag = json.dumps(raw_title.split("#")[1:])
@@ -112,9 +114,11 @@ def oneRecordParser(data: dict) -> VideoData:
 
 
 def parser(rawJson: str) -> list:
+
     data = json.loads(rawJson)[parserDic["data"]]
     res: List[VideoData] = []
     for each_data in data:
+
         res.append(oneRecordParser(each_data))
     return res
 
@@ -132,9 +136,9 @@ def test():
     file_path = 'test.data'
     with open(file_path, 'r', encoding='utf-8') as f:
         test_data = f.read()
-    # print(test_data)
+    print(test_data)
     res = parser(test_data)
-    print(res[0])
+    print(len(res))
 
 
 if __name__ == '__main__':
