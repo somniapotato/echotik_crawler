@@ -83,7 +83,12 @@ async def fetch(url, page_params, session, proxy):
         logging.error(f"request failed:{proxy} - {e}")
 
 
-async def page_task(para: PageTaskPara, proxies: List[str], session: aiohttp.ClientSession, dataBase: DatabaseManager):
+async def page_task(para: PageTaskPara, proxies: List[str], session: aiohttp.ClientSession):
+    try:
+        dataBase = DatabaseManager(db_host, db_user, db_password, db_name)
+    except Exception as e:
+        logging.error(f"connect to mysql failed: {e}")
+
     page_params = {
         "time_type": para.time_type,
         "time_range": para.time_range,
@@ -113,6 +118,12 @@ async def page_task(para: PageTaskPara, proxies: List[str], session: aiohttp.Cli
     logging.info(
         f"write rows success, numbers of rows: {len(records)-error_nums}")
 
+    try:
+        dataBase.close()
+        pass
+    except Exception as e:
+        logging.error(f"close mysql connection failed: {e}")
+
 
 async def main():
     current_date = datetime.date.today()
@@ -135,7 +146,6 @@ async def main():
 
     pageTasks = []
     session = aiohttp.ClientSession()
-    dataBase = DatabaseManager(db_host, db_user, db_password, db_name)
 
     loop_num = len(cats)
     if debug_mode:
@@ -147,7 +157,7 @@ async def main():
     for i in range(loop_num):
         para = PageTaskPara(time_range=ti_range, page="1",
                             product_categories=cats[i])
-        task = asyncio.create_task(page_task(para, proxies, session, dataBase))
+        task = asyncio.create_task(page_task(para, proxies, session))
         pageTasks.append(task)
     try:
         await asyncio.gather(*pageTasks, return_exceptions=True)
@@ -155,12 +165,6 @@ async def main():
         logging.error(f"subtask failed: {e}")
     finally:
         await session.close()
-
-    try:
-        dataBase.close()
-        pass
-    except Exception as e:
-        logging.error(f"close mysql connection failed: {e}")
 
 if __name__ == '__main__':
     setup_logging()
