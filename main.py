@@ -10,6 +10,7 @@ import random
 import logging
 from utils.logger import setup_logging
 from utils.database import DatabaseManager
+from tenacity import retry, stop_after_attempt, wait_fixed
 import toml
 
 filter_url = "https://echotik.live/api/v1/data/videos/leaderboard/filters"
@@ -70,6 +71,7 @@ def getProxies() -> List[str]:
     return proxies
 
 
+@retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
 async def fetch(url, page_params, session, proxy):
     if debug_mode:
         proxy = ""
