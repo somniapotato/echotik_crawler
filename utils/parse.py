@@ -4,8 +4,10 @@ from typing import Optional, List, Type
 
 parserDic = {
     "data": "data",
+    "video_id": "video_id",
     "raw_title": "video_title",
     "video_url": "video_url",
+    "share_url": "share_url",
     "total_sale_cnt": "total_sale_cnt",  # 视频销量
     "views_count": "views_count",  # 播放
     "duration": "duration",
@@ -16,6 +18,9 @@ parserDic = {
     "comment_count": "comment_count",  # 评论
     "share_count": "share_count",  # 分享
     "video_products": "video_products",
+    "influencer_info": "influencer",
+    "influencer_id": "unique_id",
+    "influencer_name": "nick_name",
     ####################### product info #####################
     "product_id": "product_id",
     "product_name": "product_name",
@@ -51,6 +56,7 @@ class VideoData:
     title: Optional[str] = None
     hashtag: Optional[str] = None  # jsonStr
     video_url: Optional[str] = None
+    share_url: Optional[str] = None
     total_sale_cnt: Optional[int] = None
     views_count: Optional[int] = None
     duration: Optional[int] = None  # seconds
@@ -61,6 +67,8 @@ class VideoData:
     comment_count: Optional[int] = None
     share_count: Optional[int] = None
     video_products: Optional[str] = None  # jsonStr
+    influencer_id: Optional[str] = None
+    influencer_name: Optional[str] = None
 
 
 def str2int(s: str):
@@ -79,13 +87,21 @@ def str2int(s: str):
 
 
 def oneRecordParser(data: dict) -> VideoData:
-    videoData = VideoData()
+    if parserDic["video_id"] not in data.keys() or data[parserDic["video_id"]] == "":
+        raise Exception(f"video id not found, {data}")
 
-    videoData.video_id = data[parserDic["video_id"]]
+    videoData = VideoData(video_id=data[parserDic["video_id"]])
+
     raw_title = data[parserDic["raw_title"]]
     videoData.title = raw_title.split("#")[0]
     videoData.hashtag = json.dumps(raw_title.split("#")[1:])
     videoData.video_url = data[parserDic["video_url"]]
+    videoData.share_url = data[parserDic["share_url"]]
+
+    #### influencer info ###
+    influencer_info = data[parserDic["influencer_info"]]
+    videoData.influencer_id = influencer_info[parserDic["influencer_id"]]
+    videoData.influencer_name = influencer_info[parserDic["influencer_name"]]
 
     #### video metrics ####
     videoData.total_sale_cnt = str2int(data[parserDic["total_sale_cnt"]])
@@ -114,11 +130,9 @@ def oneRecordParser(data: dict) -> VideoData:
 
 
 def parser(rawJson: str) -> list:
-
     data = json.loads(rawJson)[parserDic["data"]]
     res: List[VideoData] = []
     for each_data in data:
-
         res.append(oneRecordParser(each_data))
     return res
 

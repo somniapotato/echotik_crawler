@@ -1,0 +1,13 @@
+[database]
+host = "127.0.0.1"
+username = "root"
+password = "123456"
+dbname = "videos"
+
+[task]
+per_page = 50
+authorization = "Bearer 108205|AfdsWVtJs2wWALqeimj4JNg3E3nGmMElPO7eG6Mq"
+
+[other]
+proxy_txt = "proxy-list.txt"
+debug_mode = true  # If debug mode is enabled, the spider will only crawl one page and the data will be printed to the command line instead of being stored in the database.
