@@ -6,7 +6,7 @@ dbname = "videos"
 
 [task]
 per_page = 10
-authorization = "Bearer 109486|X8lju9FHZbfTwqrXVGsXHniqVCh3H9uptOl3sZ1A"
+authorization = "Bearer 109826|Nq0KELRMwg7HPR9T2PPnYzVuSw2ZfzEwsah475OT"
 
 [other]
 proxy_txt = "proxy-list.txt"

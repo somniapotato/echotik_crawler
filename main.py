@@ -102,23 +102,28 @@ async def page_task(para: PageTaskPara, proxies: List[str], session: aiohttp.Cli
     url = page_url
     resp = await fetch(url, page_params, session, f"http://{proxy}")
     try:
-        records = parser(resp)
+        video_info_records, video_trendy_records, influencer_records, product_info_records = parser(
+            resp, para.time_range)
     except Exception as e:
         logging.error(
             f"parse data failed:{e}, page={para.page}, catid={para.product_categories}")
+
     if debug_mode:
-        print(records[0])
+        print(video_info_records[0])
+        print(video_trendy_records[0])
+        print(influencer_records[0])
+        print(product_info_records[0])
         return
 
-    error_nums = 0
-    for record in records:
-        try:
-            dataBase.insert_or_update_row(record)
-        except Exception as e:
-            error_nums += 1
-            logging.error(f"write rows failed:{e}")
-    logging.info(
-        f"write rows success, numbers of rows: {len(records)-error_nums}")
+    # error_nums = 0
+    # for record in records:
+    #     try:
+    #         dataBase.insert_or_update_row(record)
+    #     except Exception as e:
+    #         error_nums += 1
+    #         logging.error(f"write rows failed:{e}")
+    # logging.info(
+    #     f"write rows success, numbers of rows: {len(records)-error_nums}")
 
     try:
         dataBase.close()
