@@ -121,6 +121,7 @@ def oneRecordParser(data: dict) -> VideoData:
     videoData.share_count = str2int(data[parserDic["share_count"]])
     videoData.duration = str2int(data[parserDic["duration"]])
     videoData.publish_time = data[parserDic["publish_time"]]
+    videoData.total_gmv_amt = str2int(data[parserDic["total_gmv_amt"]])
 
     #### related product info ####
     products: List[ProductInfo] = []
@@ -129,10 +130,10 @@ def oneRecordParser(data: dict) -> VideoData:
         p.product_id = i[parserDic["product_id"]]
         p.product_name = i[parserDic["product_name"]]
         p.cover_url = i[parserDic["cover_url"]]
-        p.total_gmv_amt = i[parserDic["total_gmv_amt"]]
-        p.total_sale_cnt = i[parserDic["total_sale_cnt"]]
-        p.video_gmv_amt = i[parserDic["video_gmv_amt"]]
-        p.video_sale_cnt = i[parserDic["video_sale_cnt"]]
+        p.total_gmv_amt = str2int(i[parserDic["total_gmv_amt"]])
+        p.total_sale_cnt = str2int(i[parserDic["total_sale_cnt"]])
+        p.video_gmv_amt = str2int(i[parserDic["video_gmv_amt"]])
+        p.video_sale_cnt = str2int(i[parserDic["video_sale_cnt"]])
         if i[parserDic["avg_price"]] != parserDic["N/A"]:
             p.avg_price = float(i[parserDic["avg_price"]].replace("$", ""))
         p.cat1 = i[parserDic["raw_category_name"]]
