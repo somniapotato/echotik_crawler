@@ -1,6 +1,7 @@
 import json
 from dataclasses import dataclass, asdict
-from typing import Optional, List, Type
+from typing import Optional, List
+import logging
 
 parserDic = {
     "data": "data",
@@ -8,20 +9,20 @@ parserDic = {
     "raw_title": "video_title",
     "video_url": "video_url",
     "share_url": "share_url",
-    "total_sale_cnt": "total_sale_cnt",  # 视频销量
-    "views_count": "views_count",  # 播放
+    "total_sale_cnt": "total_sale_cnt",  # Video shares
+    "views_count": "views_count",  # Views
     "duration": "duration",
     "total_gmv_amt": "total_gmv_amt",
     "publish_time": "publish_time",
-    "interact_ratio": "interact_ratio",  # ER 互动率
-    "digg_count": "digg_count",  # 点赞
-    "comment_count": "comment_count",  # 评论
-    "share_count": "share_count",  # 分享
+    "interact_ratio": "interact_ratio",  # ER Rate
+    "digg_count": "digg_count",  # Likes
+    "comment_count": "comment_count",  # Comments
+    "share_count": "share_count",  # Shares
     "video_products": "video_products",
     "influencer_info": "influencer",
     "influencer_id": "unique_id",
     "influencer_name": "nick_name",
-    ####################### product info #####################
+    ####################### related product info #####################
     "product_id": "product_id",
     "product_name": "product_name",
     "raw_category_name": "category_name",
@@ -83,6 +84,11 @@ def str2int(s: str):
     if "M" in s:
         s = s.replace("M", "")
         return int(float(s) * 1000000)
+    if "s" in s:
+        s = s.replace("s", "")
+        if "m" in s:
+            s = s.replace("m", "")
+            return int(s)+60
     return int(s)
 
 
@@ -94,7 +100,8 @@ def oneRecordParser(data: dict) -> VideoData:
 
     raw_title = data[parserDic["raw_title"]]
     videoData.title = raw_title.split("#")[0]
-    videoData.hashtag = json.dumps(raw_title.split("#")[1:])
+    hashtag = raw_title.split("#")[1:]
+    videoData.hashtag = json.dumps(list(filter(lambda x: x != "", hashtag)))
     videoData.video_url = data[parserDic["video_url"]]
     videoData.share_url = data[parserDic["share_url"]]
 
@@ -110,16 +117,22 @@ def oneRecordParser(data: dict) -> VideoData:
         videoData.interact_ratio = float(
             data[parserDic["interact_ratio"]].replace("%", "")) / 100
     videoData.digg_count = str2int(data[parserDic["digg_count"]])
-    videoData.comment_count = str2int(data[parserDic["comment_count"]])
+    videoData.comment_count = data[parserDic["comment_count"]]
     videoData.share_count = str2int(data[parserDic["share_count"]])
+    videoData.duration = str2int(data[parserDic["duration"]])
+    videoData.publish_time = data[parserDic["publish_time"]]
 
-    #### product info ####
+    #### related product info ####
     products: List[ProductInfo] = []
     for i in data[parserDic["video_products"]]:
         p = ProductInfo()
         p.product_id = i[parserDic["product_id"]]
         p.product_name = i[parserDic["product_name"]]
         p.cover_url = i[parserDic["cover_url"]]
+        p.total_gmv_amt = i[parserDic["total_gmv_amt"]]
+        p.total_sale_cnt = i[parserDic["total_sale_cnt"]]
+        p.video_gmv_amt = i[parserDic["video_gmv_amt"]]
+        p.video_sale_cnt = i[parserDic["video_sale_cnt"]]
         if i[parserDic["avg_price"]] != parserDic["N/A"]:
             p.avg_price = float(i[parserDic["avg_price"]].replace("$", ""))
         p.cat1 = i[parserDic["raw_category_name"]]
@@ -133,7 +146,11 @@ def parser(rawJson: str) -> list:
     data = json.loads(rawJson)[parserDic["data"]]
     res: List[VideoData] = []
     for each_data in data:
-        res.append(oneRecordParser(each_data))
+        try:
+            parsed_data = oneRecordParser(each_data)
+            res.append(parsed_data)
+        except Exception as e:
+            logging.error(f"parse video failed:{e}")
     return res
 
 

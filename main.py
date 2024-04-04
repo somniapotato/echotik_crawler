@@ -45,7 +45,7 @@ headers = {
     "accept-language": "zh-CN,zh;q=0.9,zh-TW;q=0.8,ja;q=0.7",
     "authorization": authorization,
     "content-type": "application/json",
-    "cookie": "currency=USD; lang=zh-CN; region=US;",
+    "cookie": "currency=USD; lang=en-US; region=US;",
     "dnt": "1",
     "referer": "https://echotik.live/videos/leaderboard/top-selling-videos?time_type=daily&time_range=20240326&page=1",
     "sec-ch-ua": '"Google Chrome";v="123", "Not:A-Brand";v="8", "Chromium";v="123"',
@@ -56,7 +56,7 @@ headers = {
     "sec-fetch-site": "same-origin",
     "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
     "x-currency": "USD",
-    "x-lang": "zh-CN",
+    "x-lang": "en-US",
     "x-region": "US",
 }
 

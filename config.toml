@@ -5,8 +5,8 @@ password = "123456"
 dbname = "videos"
 
 [task]
-per_page = 50
-authorization = "Bearer 108205|AfdsWVtJs2wWALqeimj4JNg3E3nGmMElPO7eG6Mq"
+per_page = 10
+authorization = "Bearer 109486|X8lju9FHZbfTwqrXVGsXHniqVCh3H9uptOl3sZ1A"
 
 [other]
 proxy_txt = "proxy-list.txt"
