@@ -121,7 +121,7 @@ def str2int(s: str):
                 s = s.replace("m", "")
                 return int(s)+60
     except Exception as e:
-        logging.error(f"str 2 int failed: {e}")
+        logging.error(f"str 2 int failed, meta data:{s}, error: {e}")
     return int(s)
 
 
@@ -159,8 +159,12 @@ def video_trendy_parer(data: dict, date: str) -> VideoTrendy:
     video_trendy.date = date
     video_trendy.sales = str2int(data[parserDic["total_sale_cnt"]])
     video_trendy.views = str2int(data[parserDic["views_count"]])
-    video_trendy.er_ratio = float(
-        data[parserDic["interact_ratio"]].replace("%", "")) / 100
+    try:
+        video_trendy.er_ratio = float(
+            data[parserDic["interact_ratio"]].replace("%", "")) / 100
+    except Exception as e:
+        logging.error(
+            f'interact_ratio meta data:{data[parserDic["interact_ratio"]]}, error:{e}')
     video_trendy.likes = str2int(data[parserDic["views_count"]])
     video_trendy.comments = data[parserDic["comment_count"]]
     video_trendy.digg_count = str2int(data[parserDic["digg_count"]])
@@ -195,7 +199,11 @@ def product_info_parer(data: dict, date: str) -> List[ProductInfo]:
         p.video_gmv_amt = str2int(i[parserDic["video_gmv_amt"]])
         p.video_sale_cnt = str2int(i[parserDic["video_sale_cnt"]])
         if i[parserDic["avg_price"]] != parserDic["N/A"]:
-            p.avg_price = float(i[parserDic["avg_price"]].replace("$", ""))
+            try:
+                p.avg_price = float(i[parserDic["avg_price"]].replace("$", ""))
+            except Exception as e:
+                logging.error(
+                    f'avg_price meta data:{data[parserDic["avg_price"]]}, error:{e}')
         products.append(p)
     return products
 

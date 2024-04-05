@@ -1,17 +1,18 @@
-import requests
-from utils.parse import parser, parseCats
-from dataclasses import dataclass
 import datetime
+import logging
+import random
 from typing import List
+from dataclasses import dataclass
+import requests
 import asyncio
 import aiohttp
 from aiohttp import ClientTimeout
-import random
-import logging
-from utils.logger import setup_logging
-from utils.database import DatabaseManager
 from tenacity import retry, stop_after_attempt, wait_fixed
 import toml
+from utils.parse import parser, parseCats
+from utils.logger import setup_logging
+from utils.database import DatabaseManager
+from utils.login import get_auth
 
 filter_url = "https://echotik.live/api/v1/data/videos/leaderboard/filters"
 page_url = "https://echotik.live/api/v1/data/videos/leaderboard/sell-videos"
@@ -28,7 +29,7 @@ proxy_txt = data['other']['proxy_txt']
 debug_mode = data['other']['debug_mode']
 
 per_page = data['task']['per_page']
-authorization = data['task']['authorization']
+# authorization = data['task']['authorization']
 
 
 @dataclass
@@ -43,7 +44,7 @@ class PageTaskPara:
 headers = {
     "accept": "application/json, text/plain, */*",
     "accept-language": "zh-CN,zh;q=0.9,zh-TW;q=0.8,ja;q=0.7",
-    "authorization": authorization,
+    # "authorization": authorization,
     "content-type": "application/json",
     "cookie": "currency=USD; lang=en-US; region=US;",
     "dnt": "1",
@@ -72,9 +73,10 @@ def getProxies() -> List[str]:
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
-async def fetch(url, page_params, session, proxy):
+async def fetch(url, page_params, session, proxy, auth):
     if debug_mode:
         proxy = ""
+    headers["authorization"] = auth
     try:
         async with session.get(url, params=page_params, proxy=proxy, timeout=ClientTimeout(total=10), headers=headers) as response:
             logging.info(
@@ -85,7 +87,7 @@ async def fetch(url, page_params, session, proxy):
         logging.error(f"request failed:{proxy} - {e}")
 
 
-async def page_task(para: PageTaskPara, proxies: List[str], session: aiohttp.ClientSession):
+async def page_task(para: PageTaskPara, proxies: List[str], session: aiohttp.ClientSession, auth: str):
     try:
         dataBase = DatabaseManager(db_host, db_user, db_password, db_name)
     except Exception as e:
@@ -100,7 +102,7 @@ async def page_task(para: PageTaskPara, proxies: List[str], session: aiohttp.Cli
     }
     proxy = random.choice(proxies)
     url = page_url
-    resp = await fetch(url, page_params, session, f"http://{proxy}")
+    resp = await fetch(url, page_params, session, f"http://{proxy}", auth)
     try:
         video_meta_records, video_trendy_records, influencer_records, product_info_records = parser(
             resp, para.time_range)
@@ -149,7 +151,7 @@ async def page_task(para: PageTaskPara, proxies: List[str], session: aiohttp.Cli
         logging.error(f"close mysql connection failed: {e}")
 
 
-async def main():
+async def main(auth: str):
     current_date = datetime.date.today()
     ti_range = str(current_date - datetime.timedelta(days=1)).replace("-", "")
 
@@ -181,7 +183,7 @@ async def main():
     for i in range(loop_num):
         para = PageTaskPara(time_range=ti_range, page="1",
                             product_categories=cats[i])
-        task = asyncio.create_task(page_task(para, proxies, session))
+        task = asyncio.create_task(page_task(para, proxies, session, auth))
         pageTasks.append(task)
     try:
         await asyncio.gather(*pageTasks, return_exceptions=True)
@@ -192,4 +194,14 @@ async def main():
 
 if __name__ == '__main__':
     setup_logging()
-    asyncio.run(main())
+    auth = None
+    try:
+        auth = get_auth()
+        logging.info(f"authorization: {auth}")
+    except Exception as e:
+        auth = None
+        logging.error(f"get auth failed: {e}")
+    finally:
+        if not auth:
+            raise Exception("get auth failed")
+    asyncio.run(main(auth))
