@@ -1,0 +1,50 @@
+CREATE DATABASE trendy;
+
+CREATE TABLE video_metadata (
+    uuid UUID PRIMARY KEY,
+    video_id VARCHAR(255) NOT NULL,
+    category VARCHAR(255),
+    video_title VARCHAR(255),
+    video_url VARCHAR(255),
+    share_url VARCHAR(255),
+    duration INTEGER,
+    publish_time DATE,
+    influencer_id VARCHAR(255),
+    product_id VARCHAR(255),
+    video_text TEXT
+);
+
+CREATE TABLE video_trendy (
+    uuid UUID PRIMARY KEY,
+    date DATE,
+    video_id VARCHAR(255) NOT NULL,
+    sales INTEGER,
+    views INTEGER,
+    er_ratio FLOAT,
+    likes INTEGER,
+    comments INTEGER,
+    digg_count INTEGER,
+    total_gmv_amt NUMERIC(10, 2)
+);
+CREATE INDEX idx_date ON video_trendy (date);
+
+CREATE TABLE influencer (
+    uuid UUID PRIMARY KEY,
+    date DATE,
+    influencer_id VARCHAR(255),
+    follower_count INTEGER
+);
+
+CREATE TABLE product_info (
+    uuid UUID PRIMARY KEY,
+    product_id VARCHAR(255),
+    date DATE,
+    product_name VARCHAR(255),
+    category VARCHAR(255),
+    cover_url VARCHAR(255),
+    avg_price DECIMAL(10, 2),
+    total_sale_cnt INTEGER,
+    total_gmv_amt DECIMAL(10, 2),
+    video_sale_cnt INTEGER,
+    video_gmv_amt NUMERIC(10, 2)
+);

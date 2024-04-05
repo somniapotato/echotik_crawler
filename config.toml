@@ -1,12 +1,12 @@
 [database]
 host = "127.0.0.1"
-username = "root"
-password = "123456"
-dbname = "videos"
+username = "postgres"
+password = "666666"
+dbname = "trendy"
 
 [task]
 per_page = 10
-authorization = "Bearer 109826|Nq0KELRMwg7HPR9T2PPnYzVuSw2ZfzEwsah475OT"
+authorization = "Bearer 110051|HoMeVcxDL8Chd2hth93er9cxfr0Ki8rSAvzu7CkD"
 
 [other]
 proxy_txt = "proxy-list.txt"

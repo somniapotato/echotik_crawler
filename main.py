@@ -102,32 +102,49 @@ async def page_task(para: PageTaskPara, proxies: List[str], session: aiohttp.Cli
     url = page_url
     resp = await fetch(url, page_params, session, f"http://{proxy}")
     try:
-        video_info_records, video_trendy_records, influencer_records, product_info_records = parser(
+        video_meta_records, video_trendy_records, influencer_records, product_info_records = parser(
             resp, para.time_range)
     except Exception as e:
         logging.error(
             f"parse data failed:{e}, page={para.page}, catid={para.product_categories}")
 
     if debug_mode:
-        print(video_info_records[0])
+        print(video_meta_records[0])
         print(video_trendy_records[0])
         print(influencer_records[0])
         print(product_info_records[0])
+        print(len(video_meta_records))
+        print(len(video_trendy_records))
+        print(len(influencer_records))
+        print(len(product_info_records))
         return
 
-    # error_nums = 0
-    # for record in records:
-    #     try:
-    #         dataBase.insert_or_update_row(record)
-    #     except Exception as e:
-    #         error_nums += 1
-    #         logging.error(f"write rows failed:{e}")
-    # logging.info(
-    #     f"write rows success, numbers of rows: {len(records)-error_nums}")
+    try:
+        for video_meta_record in video_meta_records:
+            dataBase.insert_metadata(video_meta_record)
+    except Exception as e:
+        logging.error(f"{e}")
+
+    try:
+        for video_trendy_record in video_trendy_records:
+            dataBase.insert_trendy(video_trendy_record)
+    except Exception as e:
+        logging.error(f"{e}")
+
+    try:
+        for influencer_record in influencer_records:
+            dataBase.insert_influencer(influencer_record)
+    except Exception as e:
+        logging.error(f"{e}")
+
+    try:
+        for product_info_record in product_info_records:
+            dataBase.insert_product(product_info_record)
+    except Exception as e:
+        logging.error(f"{e}")
 
     try:
         dataBase.close()
-        pass
     except Exception as e:
         logging.error(f"close mysql connection failed: {e}")
 

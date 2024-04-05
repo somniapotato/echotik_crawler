@@ -41,28 +41,7 @@ parserDic = {
 
 
 @dataclass
-class VideoData:
-    video_id: int
-    title: Optional[str] = None
-    hashtag: Optional[str] = None  # jsonStr
-    video_url: Optional[str] = None
-    share_url: Optional[str] = None
-    total_sale_cnt: Optional[int] = None
-    views_count: Optional[int] = None
-    duration: Optional[int] = None  # seconds
-    total_gmv_amt: Optional[int] = None
-    publish_time: Optional[int] = None  # timestamp
-    interact_ratio: Optional[float] = None
-    digg_count: Optional[int] = None
-    comment_count: Optional[int] = None
-    share_count: Optional[int] = None
-    video_products: Optional[str] = None  # jsonStr
-    influencer_id: Optional[str] = None
-    influencer_name: Optional[str] = None
-
-
-@dataclass
-class VideoInfo:
+class VideoMeta:
     uuid: str
     video_id: str
     influencer_id: Optional[str] = None
@@ -115,106 +94,59 @@ class ProductInfo:
     video_gmv_amt: Optional[int] = None
 
 
-def gen_uuid(s: str):
-    hash_object = hashlib.md5()
-    hash_object.update(s.encode())
-    hex_dig = hash_object.hexdigest()
-    return uuid.uuid5(uuid.NAMESPACE_DNS, hex_dig)
+def safe_execute(func, *args, **kwargs):
+    try:
+        return func(*args, **kwargs)
+    except Exception as e:
+        print(f"Error executing {func.__name__}: {e}")
+        return None
 
 
 def str2int(s: str):
-    if s == "N/A":
-        return
-    if not isinstance(s, str):
-        return
-    s = s.replace("$", "")
-    if "K" in s:
-        s = s.replace("K", "")
-        return int(float(s) * 1000)
-    if "M" in s:
-        s = s.replace("M", "")
-        return int(float(s) * 1000000)
-    if "s" in s:
-        s = s.replace("s", "")
-        if "m" in s:
-            s = s.replace("m", "")
-            return int(s)+60
+    try:
+        if s == "N/A":
+            return
+        if not isinstance(s, str):
+            return
+        s = s.replace("$", "")
+        if "K" in s:
+            s = s.replace("K", "")
+            return int(float(s) * 1000)
+        if "M" in s:
+            s = s.replace("M", "")
+            return int(float(s) * 1000000)
+        if "s" in s:
+            s = s.replace("s", "")
+            if "m" in s:
+                s = s.replace("m", "")
+                return int(s)+60
+    except Exception as e:
+        logging.error(f"str 2 int failed: {e}")
     return int(s)
 
 
-def oneRecordParser(data: dict) -> VideoData:
+def video_meta_parer(data: dict) -> VideoMeta:
     if parserDic["video_id"] not in data.keys() or data[parserDic["video_id"]] == "":
         raise Exception(f"video id not found, {data}")
-
-    videoData = VideoData(video_id=data[parserDic["video_id"]])
-
-    raw_title = data[parserDic["raw_title"]]
-    videoData.title = raw_title.split("#")[0]
-    hashtag = raw_title.split("#")[1:]
-    videoData.hashtag = json.dumps(list(filter(lambda x: x != "", hashtag)))
-    videoData.video_url = data[parserDic["video_url"]]
-    videoData.share_url = data[parserDic["share_url"]]
-
-    #### influencer info ###
-    influencer_info = data[parserDic["influencer_info"]]
-    videoData.influencer_id = influencer_info[parserDic["influencer_id"]]
-    # videoData. = influencer_info[parserDic["followers"]]
-
-    #### video metrics ####
-    videoData.total_sale_cnt = str2int(data[parserDic["total_sale_cnt"]])
-    videoData.views_count = str2int(data[parserDic["views_count"]])
-    if data[parserDic["interact_ratio"]] != parserDic["N/A"]:
-        videoData.interact_ratio = float(
-            data[parserDic["interact_ratio"]].replace("%", "")) / 100
-    videoData.digg_count = str2int(data[parserDic["digg_count"]])
-    videoData.comment_count = data[parserDic["comment_count"]]
-    videoData.share_count = str2int(data[parserDic["share_count"]])
-    videoData.duration = str2int(data[parserDic["duration"]])
-    videoData.publish_time = data[parserDic["publish_time"]]
-    videoData.total_gmv_amt = str2int(data[parserDic["total_gmv_amt"]])
-
-    #### related product info ####
-    products: List[ProductInfo] = []
-    for i in data[parserDic["video_products"]]:
-        p = ProductInfo()
-        p.product_id = i[parserDic["product_id"]]
-        p.product_name = i[parserDic["product_name"]]
-        p.cover_url = i[parserDic["cover_url"]]
-        p.total_gmv_amt = str2int(i[parserDic["total_gmv_amt"]])
-        p.total_sale_cnt = str2int(i[parserDic["total_sale_cnt"]])
-        p.video_gmv_amt = str2int(i[parserDic["video_gmv_amt"]])
-        p.video_sale_cnt = str2int(i[parserDic["video_sale_cnt"]])
-        if i[parserDic["avg_price"]] != parserDic["N/A"]:
-            p.avg_price = float(i[parserDic["avg_price"]].replace("$", ""))
-        # p.cat1 = i[parserDic["raw_category_name"]]
-        products.append(asdict(p))
-
-    videoData.video_products = json.dumps(products)
-    return videoData
-
-
-def video_info_parer(data: dict) -> VideoInfo:
-    if parserDic["video_id"] not in data.keys() or data[parserDic["video_id"]] == "":
-        raise Exception(f"video id not found, {data}")
-    video_info = VideoInfo(
+    video_meta = VideoMeta(
         uuid=str(uuid.uuid4()), video_id=data[parserDic["video_id"]])
-    video_info.category = data[
+    video_meta.category = data[
         parserDic["video_products"]][0]["category_name"]
     raw_title = data[parserDic["raw_title"]]
-    video_info.video_title = raw_title.split("#")[0]
+    video_meta.video_title = raw_title.split("#")[0]
     hashtag = raw_title.split("#")[1:]
-    video_info.hashtag = json.dumps(list(filter(lambda x: x != "", hashtag)))
-    video_info.video_url = data[parserDic["video_url"]]
-    video_info.share_url = data[parserDic["share_url"]]
-    video_info.duration = str2int(data[parserDic["duration"]])
-    video_info.publish_time = data[parserDic["publish_time"]]
-    video_info.influencer_id = data[
+    video_meta.hashtag = json.dumps(list(filter(lambda x: x != "", hashtag)))
+    video_meta.video_url = data[parserDic["video_url"]]
+    video_meta.share_url = data[parserDic["share_url"]]
+    video_meta.duration = str2int(data[parserDic["duration"]])
+    video_meta.publish_time = data[parserDic["publish_time"]]
+    video_meta.influencer_id = data[
         parserDic["influencer_info"]][parserDic["influencer_id"]]
     product_id_lis = []
     for i in data[parserDic["video_products"]]:
         product_id_lis.append(i["product_id"])
-    video_info.product_id = json.dumps(product_id_lis)
-    return video_info
+    video_meta.product_id = json.dumps(product_id_lis)
+    return video_meta
 
 
 def video_trendy_parer(data: dict, date: str) -> VideoTrendy:
@@ -222,6 +154,8 @@ def video_trendy_parer(data: dict, date: str) -> VideoTrendy:
         raise Exception(f"video id not found, {data}")
     video_trendy = VideoTrendy(
         uuid=str(uuid.uuid4()), video_id=data[parserDic["video_id"]])
+    video_trendy.influencer_id = data[
+        parserDic["influencer_info"]][parserDic["influencer_id"]]
     video_trendy.date = date
     video_trendy.sales = str2int(data[parserDic["total_sale_cnt"]])
     video_trendy.views = str2int(data[parserDic["views_count"]])
@@ -266,15 +200,15 @@ def product_info_parer(data: dict, date: str) -> List[ProductInfo]:
     return products
 
 
-def parser(rawJson: str, date: str) -> Tuple[List[VideoInfo], List[VideoTrendy], List[Influencer], List[ProductInfo]]:
+def parser(rawJson: str, date: str) -> Tuple[List[VideoMeta], List[VideoTrendy], List[Influencer], List[ProductInfo]]:
     data = json.loads(rawJson)[parserDic["data"]]
-    video_info: List[VideoInfo] = []
+    video_meta: List[VideoMeta] = []
     video_trendy: List[VideoTrendy] = []
     influencer: List[VideoTrendy] = []
     product_info: List[ProductInfo] = []
     for each_data in data:
         try:
-            parsed_video_info = video_info_parer(each_data)
+            parsed_video_meta = video_meta_parer(each_data)
         except Exception as e:
             logging.error(f"parse video info failed:{e}")
         try:
@@ -290,11 +224,11 @@ def parser(rawJson: str, date: str) -> Tuple[List[VideoInfo], List[VideoTrendy],
         except Exception as e:
             logging.error(f"parse product info failed:{e}")
 
-        video_info.append(parsed_video_info)
+        video_meta.append(parsed_video_meta)
         video_trendy.append(parsed_video_trendy)
         influencer.append(parsed_influencer)
         product_info.append(parsed_product_info_lis)
-    return video_info, video_trendy, influencer, product_info
+    return video_meta, video_trendy, influencer, product_info
 
 
 def parseCats(catsJson: str) -> list:
