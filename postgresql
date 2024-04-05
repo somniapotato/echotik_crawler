@@ -11,7 +11,8 @@ CREATE TABLE video_metadata (
     publish_time DATE,
     influencer_id VARCHAR(255),
     product_id VARCHAR(255),
-    video_text TEXT
+    video_text TEXT,
+    platform INTEGER
 );
 
 CREATE TABLE video_trendy (
@@ -24,7 +25,8 @@ CREATE TABLE video_trendy (
     likes INTEGER,
     comments INTEGER,
     digg_count INTEGER,
-    total_gmv_amt NUMERIC(10, 2)
+    total_gmv_amt NUMERIC(10, 2),
+    platform INTEGER
 );
 CREATE INDEX idx_date ON video_trendy (date);
 
@@ -32,7 +34,8 @@ CREATE TABLE influencer (
     uuid UUID PRIMARY KEY,
     date DATE,
     influencer_id VARCHAR(255),
-    follower_count INTEGER
+    follower_count INTEGER,
+    platform INTEGER
 );
 
 CREATE TABLE product_info (
@@ -46,5 +49,6 @@ CREATE TABLE product_info (
     total_sale_cnt INTEGER,
     total_gmv_amt DECIMAL(10, 2),
     video_sale_cnt INTEGER,
-    video_gmv_amt NUMERIC(10, 2)
+    video_gmv_amt NUMERIC(10, 2),
+    platform INTEGER
 );

@@ -3,7 +3,7 @@ from dataclasses import dataclass, asdict
 from typing import Optional, List, Tuple
 import logging
 import uuid
-import hashlib
+
 
 parserDic = {
     "data": "data",
@@ -39,6 +39,10 @@ parserDic = {
     "N/A": "N/A"
 }
 
+PLATFORM = {
+    "echotik": 1
+}
+
 
 @dataclass
 class VideoMeta:
@@ -54,6 +58,7 @@ class VideoMeta:
     publish_time: Optional[int] = None  # yy-mm-dd
     product_id: Optional[str] = None  # List[str]
     video_text: Optional[int] = None
+    platform: Optional[int] = None
 
 
 @dataclass
@@ -69,6 +74,7 @@ class VideoTrendy:
     comments: Optional[int] = None
     digg_count: Optional[int] = None
     total_gmv_amt: Optional[int] = None
+    platform: Optional[int] = None
 
 
 @dataclass
@@ -77,6 +83,7 @@ class Influencer:
     influencer_id: str
     date: Optional[str] = None
     follower_count: Optional[int] = None
+    platform: Optional[int] = None
 
 
 @dataclass
@@ -92,6 +99,7 @@ class ProductInfo:
     total_gmv_amt: Optional[int] = None
     video_sale_cnt: Optional[int] = None
     video_gmv_amt: Optional[int] = None
+    platform: Optional[int] = None
 
 
 def safe_execute(func, *args, **kwargs):
@@ -146,6 +154,7 @@ def video_meta_parer(data: dict) -> VideoMeta:
     for i in data[parserDic["video_products"]]:
         product_id_lis.append(i["product_id"])
     video_meta.product_id = json.dumps(product_id_lis)
+    video_meta.platform = PLATFORM['echotik']
     return video_meta
 
 
@@ -170,6 +179,7 @@ def video_trendy_parer(data: dict, date: str) -> VideoTrendy:
     video_trendy.digg_count = str2int(data[parserDic["digg_count"]])
     video_trendy.sales = str2int(data[parserDic["total_sale_cnt"]])
     video_trendy.total_gmv_amt = str2int(data[parserDic["total_gmv_amt"]])
+    video_trendy.platform = PLATFORM['echotik']
     return video_trendy
 
 
@@ -181,6 +191,7 @@ def influencer_parer(data: dict, date: str) -> Influencer:
     influencer.date = date
     influencer.follower_count = str2int(
         influencer_info[parserDic["followers"]])
+    influencer.platform = PLATFORM['echotik']
     return influencer
 
 
@@ -198,6 +209,7 @@ def product_info_parer(data: dict, date: str) -> List[ProductInfo]:
         p.total_sale_cnt = str2int(i[parserDic["total_sale_cnt"]])
         p.video_gmv_amt = str2int(i[parserDic["video_gmv_amt"]])
         p.video_sale_cnt = str2int(i[parserDic["video_sale_cnt"]])
+        p.platform = PLATFORM['echotik']
         if i[parserDic["avg_price"]] != parserDic["N/A"]:
             try:
                 p.avg_price = float(i[parserDic["avg_price"]].replace("$", ""))
