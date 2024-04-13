@@ -26,7 +26,6 @@ def get_auth() -> str:
 
     driver = webdriver.Chrome(seleniumwire_options=options)
     driver.get("https://echotik.live/login")
-    driver.find_elements
 
     username_input = driver.find_element(By.ID, 'email_input')
     username_input.send_keys(usr)
