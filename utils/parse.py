@@ -204,7 +204,7 @@ def product_info_parer(data: dict, date: str) -> List[ProductInfo]:
         p.date = date
         p.product_name = i[parserDic["product_name"]]
         p.category = i[parserDic["category_name"]]
-        p.cover_url = i[parserDic["cover_url"]]
+        p.cover_url = i[parserDic["cover_url"]].split('?')[0]
         p.total_gmv_amt = str2int(i[parserDic["total_gmv_amt"]])
         p.total_sale_cnt = str2int(i[parserDic["total_sale_cnt"]])
         p.video_gmv_amt = str2int(i[parserDic["video_gmv_amt"]])
@@ -225,7 +225,7 @@ def parser(rawJson: str, date: str) -> Tuple[List[VideoMeta], List[VideoTrendy],
     video_meta: List[VideoMeta] = []
     video_trendy: List[VideoTrendy] = []
     influencer: List[VideoTrendy] = []
-    product_info: List[ProductInfo] = []
+    products_info: List[ProductInfo] = []
     for each_data in data:
         try:
             parsed_video_meta = video_meta_parer(each_data)
@@ -247,8 +247,8 @@ def parser(rawJson: str, date: str) -> Tuple[List[VideoMeta], List[VideoTrendy],
         video_meta.append(parsed_video_meta)
         video_trendy.append(parsed_video_trendy)
         influencer.append(parsed_influencer)
-        product_info.append(parsed_product_info_lis)
-    return video_meta, video_trendy, influencer, product_info
+        products_info.extend(parsed_product_info_lis)
+    return video_meta, video_trendy, influencer, products_info
 
 
 def parseCats(catsJson: str) -> list:

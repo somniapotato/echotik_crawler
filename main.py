@@ -29,7 +29,7 @@ proxy_txt = data['other']['proxy_txt']
 debug_mode = data['other']['debug_mode']
 
 per_page = data['task']['per_page']
-# authorization = data['task']['authorization']
+authorization = data['task']['authorization']
 
 
 @dataclass
@@ -119,7 +119,7 @@ async def page_task(para: PageTaskPara, proxies: List[str], session: aiohttp.Cli
         print(len(video_trendy_records))
         print(len(influencer_records))
         print(len(product_info_records))
-        return
+        
 
     try:
         for video_meta_record in video_meta_records:
@@ -194,14 +194,14 @@ async def main(auth: str):
 
 if __name__ == '__main__':
     setup_logging()
-    auth = None
-    try:
-        auth = get_auth()
-        logging.info(f"authorization: {auth}")
-    except Exception as e:
-        auth = None
-        logging.error(f"get auth failed: {e}")
-    finally:
-        if not auth:
-            raise Exception("get auth failed")
+    auth = authorization
+    # try:
+    #     auth = get_auth()
+    #     logging.info(f"authorization: {auth}")
+    # except Exception as e:
+    #     auth = None
+    #     logging.error(f"get auth failed: {e}")
+    # finally:
+    #     if not auth:
+    #         raise Exception("get auth failed")
     asyncio.run(main(auth))
