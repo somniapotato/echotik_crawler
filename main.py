@@ -1,6 +1,7 @@
 import datetime
 import logging
 import random
+import os
 from typing import List
 from dataclasses import dataclass
 import requests
@@ -30,6 +31,18 @@ debug_mode = data['other']['debug_mode']
 
 per_page = data['task']['per_page']
 authorization = data['task']['authorization']
+
+db_host = os.environ.get('DB_HOST')
+db_user = os.environ.get('DB_USER')
+db_password = os.environ.get('DB_PASSWORD')
+db_name = os.environ.get('DB_NAME')
+db_PORT = os.environ.get('DB_PORT')
+if os.environ.get('DEBUG_MODE') == "True":
+    debug_mode = True
+else:
+    debug_mode = False
+per_page = os.environ.get('PER_PAGE')
+
 
 
 @dataclass
@@ -63,13 +76,15 @@ headers = {
 
 
 def getProxies() -> List[str]:
-    file_path = proxy_txt
-    with open(file_path, 'r', encoding='utf-8') as f:
-        proxies = f.readlines()
-    proxies = [p.rstrip('\n') for p in proxies]
-    if len(proxies) == 0:
-        raise Exception("proxy list not found")
-    return proxies
+    # file_path = proxy_txt
+    # with open(file_path, 'r', encoding='utf-8') as f:
+    #     proxies = f.readlines()
+    # proxies = [p.rstrip('\n') for p in proxies]
+    # if len(proxies) == 0:
+    #     raise Exception("proxy list not found")
+    # return proxies
+    proxies = os.environ.get('PROXIES')
+    return proxies.split(';')
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
@@ -87,12 +102,7 @@ async def fetch(url, page_params, session, proxy, auth):
         logging.error(f"request failed:{proxy} - {e}")
 
 
-async def page_task(para: PageTaskPara, proxies: List[str], session: aiohttp.ClientSession, auth: str):
-    try:
-        dataBase = DatabaseManager(db_host, db_user, db_password, db_name)
-    except Exception as e:
-        logging.error(f"connect to mysql failed: {e}")
-
+async def page_task(para: PageTaskPara, proxies: List[str], session: aiohttp.ClientSession, auth: str, dataBase: DatabaseManager):
     page_params = {
         "time_type": para.time_type,
         "time_range": para.time_range,
@@ -100,6 +110,7 @@ async def page_task(para: PageTaskPara, proxies: List[str], session: aiohttp.Cli
         "product_categories": para.product_categories,
         "per_page": para.per_page
     }
+
     proxy = random.choice(proxies)
     url = page_url
     resp = await fetch(url, page_params, session, f"http://{proxy}", auth)
@@ -170,6 +181,12 @@ async def main(auth: str):
     except Exception as e:
         logging.error(f"spawn cats subtasks failed: {e}")
 
+    print(db_host, db_user, db_password, db_name, debug_mode)
+    try:
+        dataBase = DatabaseManager(db_host, db_user, db_password, db_name)
+    except Exception as e:
+        logging.error(f"connect to mysql failed: {e}")
+
     pageTasks = []
     session = aiohttp.ClientSession()
 
@@ -183,8 +200,9 @@ async def main(auth: str):
     for i in range(loop_num):
         para = PageTaskPara(time_range=ti_range, page="1",
                             product_categories=cats[i])
-        task = asyncio.create_task(page_task(para, proxies, session, auth))
+        task = asyncio.create_task(page_task(para, proxies, session, auth, dataBase))
         pageTasks.append(task)
+
     try:
         await asyncio.gather(*pageTasks, return_exceptions=True)
     except Exception as e:
