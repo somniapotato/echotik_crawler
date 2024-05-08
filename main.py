@@ -13,7 +13,8 @@ import toml
 from utils.parse import parser, parseCats
 from utils.logger import setup_logging
 from utils.database import DatabaseManager
-from utils.login import get_auth
+from utils.bucket import TokenBucket
+# from utils.login import get_auth
 
 filter_url = "https://echotik.live/api/v1/data/videos/leaderboard/filters"
 page_url = "https://echotik.live/api/v1/data/videos/leaderboard/sell-videos"
@@ -32,6 +33,7 @@ debug_mode = data['other']['debug_mode']
 per_page = data['task']['per_page']
 authorization = data['task']['authorization']
 
+authorization = os.environ.get('AUTH')
 db_host = os.environ.get('DB_HOST')
 db_user = os.environ.get('DB_USER')
 db_password = os.environ.get('DB_PASSWORD')
@@ -42,7 +44,6 @@ if os.environ.get('DEBUG_MODE') == "True":
 else:
     debug_mode = False
 per_page = os.environ.get('PER_PAGE')
-
 
 
 @dataclass
@@ -83,23 +84,18 @@ def getProxies() -> List[str]:
     # if len(proxies) == 0:
     #     raise Exception("proxy list not found")
     # return proxies
-    proxies = os.environ.get('PROXIES')
-    return proxies.split(';')
+    return os.environ.get('PROXIES').split(';')
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
 async def fetch(url, page_params, session, proxy, auth):
     if debug_mode:
-        proxy = ""
+        proxy = None
     headers["authorization"] = auth
-    try:
-        async with session.get(url, params=page_params, proxy=proxy, timeout=ClientTimeout(total=10), headers=headers) as response:
-            logging.info(
-                f"request success: cat_id={page_params['product_categories']}, page={page_params['page']}, per_page={page_params['per_page']}")
-
-            return await response.text()
-    except Exception as e:
-        logging.error(f"request failed:{proxy} - {e}")
+    async with session.get(url, params=page_params, proxy=proxy, timeout=ClientTimeout(total=10), headers=headers) as response:
+        if response.status != 200:
+            raise Exception(f"Request failed with status {response.status}")
+        return await response.text()
 
 
 async def page_task(para: PageTaskPara, proxies: List[str], session: aiohttp.ClientSession, auth: str, dataBase: DatabaseManager):
@@ -113,7 +109,13 @@ async def page_task(para: PageTaskPara, proxies: List[str], session: aiohttp.Cli
 
     proxy = random.choice(proxies)
     url = page_url
-    resp = await fetch(url, page_params, session, f"http://{proxy}", auth)
+    try:
+        resp = await fetch(url, page_params, session, proxy, auth)
+        logging.info(
+            f"request success: cat_id={page_params['product_categories']}, page={page_params['page']}, per_page={page_params['per_page']}")
+    except Exception as e:
+        logging.error(f"{e}, cat_id:{page_params['product_categories']}")
+
     try:
         video_meta_records, video_trendy_records, influencer_records, product_info_records = parser(
             resp, para.time_range)
@@ -130,36 +132,38 @@ async def page_task(para: PageTaskPara, proxies: List[str], session: aiohttp.Cli
         print(len(video_trendy_records))
         print(len(influencer_records))
         print(len(product_info_records))
-        
 
     try:
         for video_meta_record in video_meta_records:
-            dataBase.insert_metadata(video_meta_record)
+            await dataBase.insert_metadata(video_meta_record)
+        logging.info(
+            f"insert meta success: catid={para.product_categories}, nums={len(video_meta_records)}")
     except Exception as e:
         logging.error(f"{e}")
 
     try:
         for video_trendy_record in video_trendy_records:
-            dataBase.insert_trendy(video_trendy_record)
+            await dataBase.insert_trendy(video_trendy_record)
+        logging.info(
+            f"insert trendy success: catid={para.product_categories}, nums={len(video_trendy_records)}")
     except Exception as e:
         logging.error(f"{e}")
 
     try:
         for influencer_record in influencer_records:
-            dataBase.insert_influencer(influencer_record)
+            await dataBase.insert_influencer(influencer_record)
+        logging.info(
+            f"insert influencer success: catid={para.product_categories}, nums={len(influencer_records)}")
     except Exception as e:
         logging.error(f"{e}")
 
     try:
         for product_info_record in product_info_records:
-            dataBase.insert_product(product_info_record)
+            await dataBase.insert_product(product_info_record)
+        logging.info(
+            f"insert products success: catid={para.product_categories}, nums={len(product_info_records)}")
     except Exception as e:
         logging.error(f"{e}")
-
-    try:
-        dataBase.close()
-    except Exception as e:
-        logging.error(f"close mysql connection failed: {e}")
 
 
 async def main(auth: str):
@@ -168,27 +172,31 @@ async def main(auth: str):
 
     try:
         proxies = getProxies()
+        logging.info("get proxies")
     except Exception as e:
         logging.error(f"{e}")
 
     try:
         response = requests.get(filter_url, headers=headers)
+        logging.info("get cats resp successful")
     except Exception as e:
         logging.error(f"get filters failed: {e}")
 
     try:
         cats = parseCats(response.text)
+        logging.info("pares cats successful")
     except Exception as e:
         logging.error(f"spawn cats subtasks failed: {e}")
 
-    print(db_host, db_user, db_password, db_name, debug_mode)
     try:
         dataBase = DatabaseManager(db_host, db_user, db_password, db_name)
+        logging.info("connected to db successful")
     except Exception as e:
-        logging.error(f"connect to mysql failed: {e}")
+        logging.error(f"connect to psql failed: {e}")
 
     pageTasks = []
     session = aiohttp.ClientSession()
+    bucket = TokenBucket(rate=1, capacity=2)
 
     loop_num = len(cats)
     if debug_mode:
@@ -200,7 +208,10 @@ async def main(auth: str):
     for i in range(loop_num):
         para = PageTaskPara(time_range=ti_range, page="1",
                             product_categories=cats[i])
-        task = asyncio.create_task(page_task(para, proxies, session, auth, dataBase))
+        while not bucket.consume():
+            await asyncio.sleep(0.1)
+        task = asyncio.create_task(
+            page_task(para, proxies, session, auth, dataBase))
         pageTasks.append(task)
 
     try:
@@ -209,6 +220,22 @@ async def main(auth: str):
         logging.error(f"subtask failed: {e}")
     finally:
         await session.close()
+
+    try:
+        dataBase.close()
+        logging.info(f"close psql connection success")
+    except Exception as e:
+        logging.error(f"close psql connection failed: {e}")
+
+
+def spider_handler(a, b):
+    setup_logging()
+    logging.info("set up logging")
+    auth = authorization
+    logging.info("get auth")
+    asyncio.run(main(auth))
+    return "success"
+
 
 if __name__ == '__main__':
     setup_logging()

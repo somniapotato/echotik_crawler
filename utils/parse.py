@@ -72,7 +72,6 @@ class VideoTrendy:
     er_ratio: Optional[float] = None
     likes: Optional[int] = None
     comments: Optional[int] = None
-    digg_count: Optional[int] = None
     total_gmv_amt: Optional[int] = None
     platform: Optional[int] = None
 
@@ -112,10 +111,10 @@ def safe_execute(func, *args, **kwargs):
 
 def str2int(s: str):
     try:
-        if s == "N/A":
+        if s == "N/A" or s == "-":
             return
         if not isinstance(s, str):
-            return
+            return int(float(s))
         s = s.replace("$", "")
         if "K" in s:
             s = s.replace("K", "")
@@ -125,12 +124,12 @@ def str2int(s: str):
             return int(float(s) * 1000000)
         if "s" in s:
             s = s.replace("s", "")
-            if "m" in s:
-                s = s.replace("m", "")
-                return int(s)+60
+        if "m" in s:
+            s = s.replace("m", "")
+            return int(float(s))+60
+        return int(float(s))
     except Exception as e:
         logging.error(f"str 2 int failed, meta data:{s}, error: {e}")
-    return int(s)
 
 
 def video_meta_parer(data: dict) -> VideoMeta:
@@ -141,7 +140,7 @@ def video_meta_parer(data: dict) -> VideoMeta:
     video_meta.category = data[
         parserDic["video_products"]][0]["category_name"]
     raw_title = data[parserDic["raw_title"]]
-    video_meta.video_title = raw_title.split("#")[0]
+    video_meta.video_title = raw_title.split("#")[0][:500]
     hashtag = raw_title.split("#")[1:]
     video_meta.hashtag = json.dumps(list(filter(lambda x: x != "", hashtag)))
     video_meta.video_url = data[parserDic["video_url"]]
@@ -169,14 +168,13 @@ def video_trendy_parer(data: dict, date: str) -> VideoTrendy:
     video_trendy.sales = str2int(data[parserDic["total_sale_cnt"]])
     video_trendy.views = str2int(data[parserDic["views_count"]])
     try:
-        video_trendy.er_ratio = float(
-            data[parserDic["interact_ratio"]].replace("%", "")) / 100
+        video_trendy.er_ratio = round(float(
+            data[parserDic["interact_ratio"]].replace("%", "")) / 100, 2)
     except Exception as e:
         logging.error(
             f'interact_ratio meta data:{data[parserDic["interact_ratio"]]}, error:{e}')
-    video_trendy.likes = str2int(data[parserDic["views_count"]])
-    video_trendy.comments = data[parserDic["comment_count"]]
-    video_trendy.digg_count = str2int(data[parserDic["digg_count"]])
+    video_trendy.likes = str2int(data[parserDic["digg_count"]])
+    video_trendy.comments = str2int(data[parserDic["comment_count"]])
     video_trendy.sales = str2int(data[parserDic["total_sale_cnt"]])
     video_trendy.total_gmv_amt = str2int(data[parserDic["total_gmv_amt"]])
     video_trendy.platform = PLATFORM['echotik']
@@ -229,25 +227,25 @@ def parser(rawJson: str, date: str) -> Tuple[List[VideoMeta], List[VideoTrendy],
     for each_data in data:
         try:
             parsed_video_meta = video_meta_parer(each_data)
+            video_meta.append(parsed_video_meta)
         except Exception as e:
-            logging.error(f"parse video info failed:{e}")
+            logging.error(f"parse video info failed:{e}, data:{each_data}")
         try:
             parsed_video_trendy = video_trendy_parer(each_data, date)
+            video_trendy.append(parsed_video_trendy)
         except Exception as e:
-            logging.error(f"parse video trendy failed:{e}")
+            logging.error(f"parse video trendy failed:{e}, data:{each_data}")
         try:
             parsed_influencer = influencer_parer(each_data, date)
+            influencer.append(parsed_influencer)
         except Exception as e:
-            logging.error(f"parse influencer failed:{e}")
+            logging.error(f"parse influencer failed:{e}, data:{each_data}")
         try:
             parsed_product_info_lis = product_info_parer(each_data, date)
+            products_info.extend(parsed_product_info_lis)
         except Exception as e:
-            logging.error(f"parse product info failed:{e}")
+            logging.error(f"parse product info failed:{e}, data:{each_data}")
 
-        video_meta.append(parsed_video_meta)
-        video_trendy.append(parsed_video_trendy)
-        influencer.append(parsed_influencer)
-        products_info.extend(parsed_product_info_lis)
     return video_meta, video_trendy, influencer, products_info
 
 

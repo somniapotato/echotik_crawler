@@ -5,7 +5,7 @@ CREATE TABLE video_metadata (
     video_id VARCHAR(255) NOT NULL,
     category VARCHAR(255),
     video_title VARCHAR(500),
-    hash_tags VARCHAR(500),
+    hash_tags TEXT,
     video_url VARCHAR(255),
     share_url VARCHAR(255),
     duration INTEGER,
@@ -25,7 +25,6 @@ CREATE TABLE video_trendy (
     er_ratio FLOAT,
     likes INTEGER,
     comments INTEGER,
-    digg_count INTEGER,
     total_gmv_amt NUMERIC(10, 2),
     platform INTEGER
 );
