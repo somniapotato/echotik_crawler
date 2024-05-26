@@ -258,6 +258,16 @@ def parseCats(catsJson: str) -> list:
     return res
 
 
+def parseCatsAndName(catsJson: str) -> dict:
+    res = {}
+    catsData = json.loads(catsJson)
+    for i in catsData["data"]["product_categories"]:
+        if i["id"] != "":
+            res.append(i["id"])
+            res[i["id"]] = i["name"]
+    return res
+
+
 def test():
     file_path = 'test.data'
     with open(file_path, 'r', encoding='utf-8') as f:

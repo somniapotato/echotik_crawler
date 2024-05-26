@@ -2,6 +2,8 @@ import datetime
 import logging
 import random
 import os
+import math
+import csv
 from typing import List
 from dataclasses import dataclass
 import requests
@@ -10,7 +12,7 @@ import aiohttp
 from aiohttp import ClientTimeout
 from tenacity import retry, stop_after_attempt, wait_fixed
 import time
-from utils.parse import parser, parseCats
+from utils.parse import parser, parseCats, parseCatsAndName
 from utils.logger import setup_logging
 from utils.database import DatabaseManager
 from utils.bucket import TokenBucket
@@ -61,12 +63,33 @@ def getProxies() -> List[str]:
     return os.environ.get('PROXIES').split(';')
 
 
-async def get_total(lis, catid, show_case, session):
+async def parse_list_page(input, catid, show_case):
+    data = input['data']
+    rows = []
+    for d in data:
+        influencer_id = d['influencer_id']
+        tiktok_id = d['unique_id']
+        total_product_cnt = d['total_product_cnt']
+        row = [influencer_id, tiktok_id,
+               total_product_cnt, catsDic[catid], show_case]
+        rows.append(row)
+    return await rows
+
+
+def save_to_csv(rows):
+    filename = 'output.csv'
+    with open(filename, mode='a', newline='') as file:
+        writer = csv.writer(file)
+        for row in rows:
+            writer.writerow(row)
+
+
+async def fetch_list_page(page, per_page, low, high, catid, show_case, session):
     url = 'https://echotik.live/api/v1/data/influencers'
     params = {
-        'page': 1,
-        'per_page': 10,
-        'followers_count': f'{lis[0]}-{lis[1]}',
+        'page': page,
+        'per_page': per_page,
+        'followers_count': f'{low}-{high}',
         'is_email': 1,
         'order': 'follower_30d_count',
         'sort': 'desc',
@@ -92,7 +115,6 @@ async def get_total(lis, catid, show_case, session):
         'x-lang': 'zh-CN',
         'x-region': 'US'
     }
-
     if env_para['debug_mode']:
         proxy = None
     else:
@@ -100,12 +122,9 @@ async def get_total(lis, catid, show_case, session):
     headers["authorization"] = env_para['auth']
     async with session.get(url, params=params, proxy=proxy, timeout=ClientTimeout(total=10), headers=headers) as response:
         if response.status != 200:
-            session.close()
             raise Exception(f"Request failed with status {response.status}")
         data = response.json()
-        total = data['meta']['total']
-        session.close()
-        return await total
+    return await data
 
 
 def split_interval(lis):
@@ -121,9 +140,20 @@ def split_interval(lis):
 
 
 async def worker(queue):
+    per_page = 50
     while True:
         task = await queue.get()
-    # TO DO
+        low = task.interval_low
+        high = task.interval_high
+        cat_id = task.catid
+        show_case = task.show_case
+        total = task.total
+        loop = math.ceil(total / per_page)
+        for i in range(loop):
+            data = fetch_list_page(i+1, per_page, low, high, cat_id, show_case)
+            fields = parse_list_page(data)
+            save_to_csv(fields)
+        queue.task_done()
 
 
 async def spawn_tasks(catid: int, show_case: bool, queue: asyncio.Queue, session: aiohttp.ClientSession):
@@ -134,7 +164,9 @@ async def spawn_tasks(catid: int, show_case: bool, queue: asyncio.Queue, session
         lis = liss.pop()
         total = -1
         try:
-            total = get_total(lis, catid, show_case, session)
+            data = fetch_list_page(
+                1, 10, lis[0], lis[1], catid, show_case, session)
+            total = data['meta']['total']
         except Exception as e:
             print(f'error: {e}')
         if total == -1:
@@ -189,6 +221,8 @@ async def main(auth: str):
 
     try:
         cats = parseCats(response.text)
+        global catsDic
+        catsDic = parseCatsAndName(response.text)
         logging.info("pares cats successful")
     except Exception as e:
         logging.error(f"spawn cats subtasks failed: {e}")
