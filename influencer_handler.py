@@ -1,6 +1,4 @@
-import datetime
 import logging
-import random
 import os
 import math
 import csv
@@ -11,10 +9,8 @@ import asyncio
 import aiohttp
 from aiohttp import ClientTimeout
 from tenacity import retry, stop_after_attempt, wait_fixed
-import time
 from utils.parse import parser, parseCats, parseCatsAndName
-from utils.logger import setup_logging
-from utils.database import DatabaseManager
+from utils.logger import setup_logging_complex
 from utils.bucket import TokenBucket
 from utils.get_env import get_env
 
@@ -63,7 +59,7 @@ def getProxies() -> List[str]:
     return os.environ.get('PROXIES').split(';')
 
 
-async def parse_list_page(input, catid, show_case):
+def parse_list_page(input, catid, show_case):
     data = input['data']
     rows = []
     for d in data:
@@ -73,7 +69,7 @@ async def parse_list_page(input, catid, show_case):
         row = [influencer_id, tiktok_id,
                total_product_cnt, catsDic[catid], show_case]
         rows.append(row)
-    return await rows
+    return rows
 
 
 def save_to_csv(rows):
@@ -84,6 +80,7 @@ def save_to_csv(rows):
             writer.writerow(row)
 
 
+@retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
 async def fetch_list_page(page, per_page, low, high, catid, show_case, session):
     url = 'https://echotik.live/api/v1/data/influencers'
     params = {
@@ -122,9 +119,11 @@ async def fetch_list_page(page, per_page, low, high, catid, show_case, session):
     headers["authorization"] = env_para['auth']
     async with session.get(url, params=params, proxy=proxy, timeout=ClientTimeout(total=10), headers=headers) as response:
         if response.status != 200:
+            logging.error(f"Request failed, catid={catid}, page={page}")
             raise Exception(f"Request failed with status {response.status}")
-        data = response.json()
-    return await data
+        data = await response.json()
+        logging.info(f"Request success, catid={catid}, page={page}")
+    return data
 
 
 def split_interval(lis):
@@ -139,8 +138,8 @@ def split_interval(lis):
     return res
 
 
-async def worker(queue):
-    per_page = 50
+async def worker(queue, session):
+    per_page = env_para['per_page']
     while True:
         task = await queue.get()
         low = task.interval_low
@@ -150,30 +149,45 @@ async def worker(queue):
         total = task.total
         loop = math.ceil(total / per_page)
         for i in range(loop):
-            data = fetch_list_page(i+1, per_page, low, high, cat_id, show_case)
-            fields = parse_list_page(data)
-            save_to_csv(fields)
+            data = await fetch_list_page(i+1, per_page, low, high, cat_id, show_case, session)
+            try:
+                rows = parse_list_page(data, cat_id, show_case)
+                logging.info(f"parse list page, rows={len(rows)}")
+            except Exception as e:
+                logging.error(f'parse list page failed, error={e}')
+
+            try:
+                save_to_csv(rows)
+                logging.info(f"save to csv, rows={len(rows)}")
+            except Exception as e:
+                logging.error(f"save to csv failed, error={e}")
         queue.task_done()
 
 
 async def spawn_tasks(catid: int, show_case: bool, queue: asyncio.Queue, session: aiohttp.ClientSession):
     liss = [[1, 10000000]]
     while True:
+        if env_para['debug_mode'] == True and queue.qsize() > 10:
+            break
         if len(liss) == 0:
             break
         lis = liss.pop()
         total = -1
         try:
-            data = fetch_list_page(
+            data = await fetch_list_page(
                 1, 10, lis[0], lis[1], catid, show_case, session)
+
             total = data['meta']['total']
+            logging.info(f'total is {total}, interval={lis[0]}-{lis[1]}')
         except Exception as e:
-            print(f'error: {e}')
+            logging.error(f'error: {e}')
         if total == -1:
             continue
         if int(total) < 2000:
             t = TaskInfo(interval_low=lis[0], interval_high=lis[1],
                          catid=catid, show_case=show_case, total=total)
+            logging.info(
+                f'add task to queue, catid={catid}, interval={lis[0]}-{lis[1]}, show_case={show_case}, total={total}')
             await queue.put(t)
             continue
         if lis[1] - lis[0] > 1:
@@ -195,29 +209,23 @@ async def gather_tasks(cats: list, show_case: bool, queue: asyncio.Queue, sessio
         while not bucket.consume():
             await asyncio.sleep(0.1)
         task = asyncio.create_task(
-            spawn_tasks(cats[i], show_case, queue))
+            spawn_tasks(cats[i], show_case, queue, session))
         influencerTasks.append(task)
 
     try:
         await asyncio.gather(*influencerTasks, return_exceptions=True)
     except Exception as e:
         logging.error(f"subtask failed: {e}")
-    finally:
-        await session.close()
 
 
-async def main(auth: str):
-    try:
-        proxies = getProxies()
-        logging.info("get proxies")
-    except Exception as e:
-        logging.error(f"{e}")
+async def main():
 
     try:
         response = requests.get(filter_url, headers=headers)
         logging.info("get cats resp successful")
     except Exception as e:
         logging.error(f"get filters failed: {e}")
+        raise Exception(f"get filters failed: {e}")
 
     try:
         cats = parseCats(response.text)
@@ -230,19 +238,21 @@ async def main(auth: str):
     session = aiohttp.ClientSession()
     queue = asyncio.Queue()
     show_case = False
-    asyncio.run(gather_tasks(cats, show_case, queue, session))
+    await gather_tasks(cats, show_case, queue, session)
     show_case = True
-    asyncio.run(gather_tasks(cats, show_case, queue, session))
+    await gather_tasks(cats, show_case, queue, session)
 
+    logging.info(f"gather queue finished, queue size is {queue.qsize()}")
     nums = 1
     workers = [asyncio.create_task(worker(queue, session))
                for _ in range(nums)]
     await queue.join()
     await asyncio.gather(*workers)
+    session.close
 
 
 def spider_handler(a, b):
-    setup_logging()
+    setup_logging_complex()
     logging.info("set up logging")
     global env_para
     env_para = get_env()
@@ -250,5 +260,14 @@ def spider_handler(a, b):
     if auth == '':
         raise Exception('no authorization found')
     logging.info("get auth")
-    main(auth)
+    asyncio.run(main(auth))
     return "success"
+
+
+if __name__ == '__main__':
+    setup_logging_complex()
+    logging.info("set up logging")
+    global env_para
+    env_para = get_env()
+    logging.info("get env parameters")
+    asyncio.run(main())

@@ -263,7 +263,6 @@ def parseCatsAndName(catsJson: str) -> dict:
     catsData = json.loads(catsJson)
     for i in catsData["data"]["product_categories"]:
         if i["id"] != "":
-            res.append(i["id"])
             res[i["id"]] = i["name"]
     return res
 
